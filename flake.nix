@@ -1,8 +1,4 @@
-# =============================================================================
-# RUST DEV SHELL TEMPLATES
-# =============================================================================
 # A collection of reusable Nix dev shells for Rust projects.
-# Intended to live as flake.nix in a dedicated templates repository.
 #
 # USAGE (per-project .envrc or .env, no local flake.nix needed):
 # > use flake <template>
@@ -14,7 +10,6 @@
 #   fenix tracks the official Rust release channels (stable/beta/nightly) and
 #   provides a `withComponents` interface that lets you pick exactly what gets
 #   installed. nixpkgs ships a single pinned Rust version that often lags behind.
-# =============================================================================
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -35,13 +30,9 @@
   in {
     devShells.x86_64-linux = {
 
-      # =========================================================================
-      # SHELL: rust (default — stable, general Rust projects)
-      # =========================================================================
-      # Activate with:  use flake "github:<you>/templates#rust"
       rust = pkgs.mkShell {
         packages = [
-          (rust.stable.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
+          (rust.complete.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
           # rust-src is required by rust-analyzer for go-to-definition into std
           rust.stable.rust-analyzer  # LSP server for IDE integration
 
@@ -52,13 +43,9 @@
         ];
       };
 
-      # =========================================================================
-      # SHELL: rust-db (stable + database tooling)
-      # =========================================================================
-      # Activate with:  use flake "github:<you>/templates#rust-db"
       rust-db = pkgs.mkShell {
         packages = [
-          (rust.stable.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
+          (rust.complete.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
           rust.stable.rust-analyzer
 
           pkgs.bacon
@@ -66,20 +53,10 @@
           pkgs.cargo-expand
           pkgs.cargo-udeps
 
-          # -----------------------------------------------------------------------
-          # Database tooling
-          # -----------------------------------------------------------------------
           pkgs.sqlx-cli    # sqlx migrations + offline query caching (`cargo sqlx prepare`)
         ];
       };
 
-      # =========================================================================
-      # SHELL: rust-nightly (nightly toolchain)
-      # =========================================================================
-      # Activate with:  use flake "github:<you>/templates#rust-nightly"
-      # Use when a crate requires nightly-only features (e.g. #![feature(...)]),
-      # or when you want access to unstable compiler internals (e.g. cargo-expand
-      # on complex proc-macros, miri, or rustc's internal test harness).
       rust-nightly = pkgs.mkShell {
         packages = [
           (rust.complete.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
@@ -90,6 +67,21 @@
           pkgs.cargo-deny
           pkgs.cargo-expand
           pkgs.cargo-udeps
+        ];
+      };
+
+      rust-lib = pkgs.mkShell {
+        packages = [
+          (rust.complete.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
+          rust.stable.rust-analyzer
+
+          pkgs.bacon
+          pkgs.cargo-deny
+          pkgs.cargo-expand
+          pkgs.cargo-udeps
+          pkgs.cargo-hack # Useful options for Cargo for testing and ci
+          pkgs.cargo-semver-checks # Scan crates for semver violations
+          pkgs.cargo-llvm-cov # Code coverage via LLVM source-based intrumentation
         ];
       };
     };
