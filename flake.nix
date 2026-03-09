@@ -20,13 +20,29 @@
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs"; # keeps fenix and nixpkgs in sync
     };
+
+    # Zig compiler binaries from different releases
+    zig = {
+      url = "github:mitchellh/zig-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Converter of zig's dependencies from `build.zig.zon` to nix exspressions
+    zon2nix = {
+      url = "github:jcollie/zon2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { fenix, nixpkgs, ... }:
+  outputs = { fenix, zig, zon2nix, nixpkgs, ... }:
   let
     pkgs = import nixpkgs { system = "x86_64-linux"; };
     # Shorthand for the fenix package set on this system
     rust = fenix.packages.x86_64-linux;
+    # Zig compiler versions from the overlay
+    zigPkgs = zig.packages.x86_64-linux;
+    # zon2nix tool for converting build.zig.zon to Nix
+    zon2nixPkg = zon2nix.packages.x86_64-linux.zon2nix;
   in {
     devShells.x86_64-linux = {
 
@@ -61,7 +77,7 @@
         packages = [
           (rust.complete.withComponents [ "cargo" "rustc" "rust-src" "rustfmt" "clippy" ])
           # Use nightly rust-analyzer for better inference on nightly-only constructs
-          rust.nightly.rust-analyzer
+          rust.complete.rust-analyzer
 
           pkgs.bacon
           pkgs.cargo-deny
@@ -82,6 +98,22 @@
           pkgs.cargo-hack # Useful options for Cargo for testing and ci
           pkgs.cargo-semver-checks # Scan crates for semver violations
           pkgs.cargo-llvm-cov # Code coverage via LLVM source-based intrumentation
+        ];
+      };
+
+      zig = pkgs.mkShell {
+        packages = [
+          zigPkgs."0.15.2"  # Zig compiler
+          pkgs.zls          # Zig Language Server
+          zon2nixPkg        # Convert build.zig.zon dependencies to Nix
+        ];
+      };
+
+      zig-master = pkgs.mkShell {
+        packages = [
+          zigPkgs.master    # Zig compiler (master branch)
+          pkgs.zls          # Zig Language Server
+          zon2nixPkg        # Convert build.zig.zon dependencies to Nix
         ];
       };
     };
